@@ -29,6 +29,12 @@ classes
     - speed 
     - kerf (offset value)
     - process_geometry
+
+unpacking and ordering edges:
+	- edges not necessarily in proper order
+	- each edge not necessarily w/ vertices in clockwise order
+	- O(VE): for each vertex, find the next edge
+	- O(E^2): each edge traversed once, need to find 
 	
 edge cases:
 - applying kerf can make some edges disappear (ie. some petal design)
@@ -42,7 +48,15 @@ confusion/concerns about arcs:
 		- in testing convex hull, what point on arc to choose??
 	- each arc needs a parameterized tangent line equation?
 	- if arc bends to the right (overall clockwise path), we don't care from convex hull or bounding box perspective
-
+		- can just use end points and use straight edge
+	- https://algnotes.wordpress.com/2013/12/13/convex-hull-of-circles/
+		- center MUST be on hull for circle to be part of hull
+		- for arcs, can start w/ circle calculation, then check w/ arc endpoints
+	- http://stackoverflow.com/questions/1336663/2d-bounding-box-of-a-sector
+		- arc bounding box is easy if we start w/ a known alignment
+		- what happens if all line segments are not part of hull??
+			- how do we check for this possibility?
+		
 tangent line properties in arcs:
 	- always perpendicular to radii in both arc definitions
 	- between 2 circles, can always find points of tangency w/ just centers and radii
@@ -61,12 +75,16 @@ stuff to look up:
 		- other ideas: 
 			- divide and conquer (if smaller components have simpler convex hulls)
 				- how to merge different hulls? (not described)
+				- split arcs and edges >> find 2 sets of hulls, then combine
 			- deflate/inflate circles (start with circle centers)
 				- hull of circles always include the arc, linear segments determined by tangency lines
-		
+		- QuickHull: eliminate interior points as quickly/early as possible
+			- can always start w/ 4 points at max/min cartesian directions
 - http://stackoverflow.com/questions/1109536/an-algorithm-for-inflating-deflating-offsetting-buffering-polygons
     - why is dilation not a thing here?
     - https://en.wikipedia.org/wiki/Straight_skeleton
+	- "polygon-buffering"
+	- also same problem as minkowski sum of polygon path and circle, but then need to find the outer contour >> minkowski usually falls back onto discretization
 
 considerations for extensions, future work
 - packing of multiple geometries together (sharing some edge)
