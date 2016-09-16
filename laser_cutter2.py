@@ -1,11 +1,11 @@
 #laser cutter - details regarding just the laser cutter system
-import laser_geo
+import laser_geo2
 import math
 
 #generic laser cutter object
 class Cutter(object):
 	_v_max		#in/s
-	_kerf = 0	#offset kerf (in) (half of the padding given by problem)
+	_kerf = 0	#offset kerf (in) (half of the padding)
 	_material_cost = 1	#material cost ($/in^2)
 	_machine_cost = 1	#machine time cost ($/s)
 
@@ -15,18 +15,19 @@ class Cutter(object):
 		self._material_cost = material_cost
 		self._machine_cost = machine_cost
 	
-	#calculate cost when given an edge list (sum of material and machine cost)
-	def calculateCost(self,geoArr):
-		return self.calculateTime(geoArr)*self._machine_cost + (geoArr.boundingBox.w+self._kerf*2)*(geoArr.boundingBox.h+self._kerf*2) * self._material_cost
+	#calculate cost when given a geometry path (sum of material and machine cost)
+	def calculateCost(self,geoPath):
+		return self.calculateTime(geoPath)*self._machine_cost + geoPath.boundingBox.area * self._material_cost
 		
-	#calculate time that machine needs to go through list of geometry elements
-	def calculateTime(self,geoArr):
+	#calculate time that machine needs to go through path
+	def calculateTime(self,geoPath):
+		offset_geoPath = geoPath.offset(self._kerf)
 		ts = 0
-		for ele in geoArr:
+		for ele in offset_geoPath:
 			#check for type and calculate timing appropriately
-			if isinstance(ele,laser_geo.Edge):
+			if isinstance(ele,laser_geo2.Edge):
 				ts += self._v_max * ele.L
-			elif isinstance(ele,laser_geo.Arc):
+			elif isinstance(ele,laser_geo2.Arc):
 				ts += self._v_max * math.exp(-1/ele.radius) * ele.L
 			else:
 				print "[ERR] Unexpected geometry type: "+repr(type(ele))
