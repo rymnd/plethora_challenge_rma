@@ -7,8 +7,8 @@ class Point(object):
 	y = 0
 	
 	def __init__(self,x,y):
-		self.x = round(x,6)	#had some precision issues during testing
-		self.y = round(y,6)
+		self.x = round(x,5)	#had some precision issues during testing
+		self.y = round(y,5)
 	def __eq__(self,other):
 		if isinstance(other,self.__class__):
 			return self.x==other.x and self.y==other.y
@@ -60,14 +60,14 @@ class Arc(Edge):
 	#assume that p1 is starting point for clockwise arc
 	def __init__(self,p1,p2,center):
 		self.pc = center
-		self.radius = round(((p1.x-center.x)**2+(p1.y-center.y)**2)**0.5,6)
+		self.radius = round(((p1.x-center.x)**2+(p1.y-center.y)**2)**0.5,5)
 		Edge.__init__(self,p1,p2)	#assume that p1 is starting point of arc
 		
 		#arc length (2 options, may need to reverse)
 		if self.whichSide(self.pc)==0:
 			self.ang = math.pi
 		else:
-			self.ang = 2.*math.asin((0.5*self.L) / self.radius)	#shorter angle
+			self.ang = 2.*math.asin(round((0.5*self.L) / self.radius, 5))	#shorter angle
 			if (self.whichSide(self.pc)<0):	#center on left of given endpoints
 				self.ang = math.pi*2 - self.ang
 		self.L = self.ang * self.radius
@@ -98,7 +98,7 @@ class Arc(Edge):
 		return Arc(p1,p2,pc)
 	#whether point is found on the given arc
 	def onArc(self,p):
-		pdist = round(((p.x-self.pc.x)**2+(p.y-self.pc.y)**2)**0.5, 6)
+		pdist = round(((p.x-self.pc.x)**2+(p.y-self.pc.y)**2)**0.5, 5)
 		if pdist!=self.radius:
 			return False
 		#check that point is between the starting and end points (on proper side)
@@ -214,10 +214,10 @@ class GeoArr():	#just list of edge elements
 			elif isinstance(ele,Edge):
 				tangentEdges.append(ele)
 		
-		print repr(len(tangentEdges))+" total tangent edges"
+		#print repr(len(tangentEdges))+" total tangent edges"
 		#should only be edge types
 		for tedge in tangentEdges:
-			ang = math.acos((tedge.p2.x-tedge.p1.x)/tedge.L)	#for reference, not actually used
+			#ang = math.acos((tedge.p2.x-tedge.p1.x)/tedge.L)	#for reference, not actually used
 			bx = (tedge.p2.x-tedge.p1.x)/tedge.L
 			by = (tedge.p2.y-tedge.p1.y)/tedge.L
 			tedgeV = tedge.alignV(bx,by)	#should be horizontal now
