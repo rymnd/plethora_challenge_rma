@@ -16,12 +16,13 @@ class Cutter(object):
 		self._machine_cost = machine_cost
 	
 	#calculate cost when given an edge list (sum of material and machine cost)
-	def calculateCost(self,geoArr):
+	def calculateCost(self,geoArr,verbose=False):
 		geoArr._genBoundingBox()
 		stockArea = (geoArr.boundingBox.w+self._kerf*2)*(geoArr.boundingBox.h+self._kerf*2)
 		machine_time = self.calculateTime(geoArr)
-		print "Stock area: "+repr(stockArea)+" from "+repr(geoArr.boundingBox.w)+"x"+repr(geoArr.boundingBox.h)
-		print "Machine time: "+repr(machine_time)
+		if verbose:
+			print "Stock area: "+repr(stockArea)+" from "+repr(geoArr.boundingBox.w)+"x"+repr(geoArr.boundingBox.h)
+			print "Machine time: "+repr(machine_time)
 		return machine_time*self._machine_cost + stockArea*self._material_cost
 		
 	#calculate time that machine needs to go through list of geometry elements

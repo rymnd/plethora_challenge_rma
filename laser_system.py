@@ -46,9 +46,9 @@ class PlethoraSystem(object):
 	def __init__(self,cutter):
 		self._cutter = cutter
 		
-	def calculateCost(self,fileName):
+	def calculateCost(self,fileName,verbose=False):
 		self._processProfile(fileName)
-		return self._cutter.calculateCost(self._profile.geoArr)
+		return self._cutter.calculateCost(self._profile.geoArr,verbose)
 		
 	def _processProfile(self,fileName):
 		f = open(fileName,'r')
@@ -59,5 +59,6 @@ if __name__=="__main__":
 	if len(sys.argv)>1:
 		fname = sys.argv[1]
 		cost = ps.calculateCost(fname)
+		#cost = ps.calculateCost(fname,True)
 		print "Cost for "+repr(fname)+": $"+repr(round(cost,2))
 	
