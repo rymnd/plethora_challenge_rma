@@ -13,3 +13,8 @@ simplified geometry problem:
 	- arcs:
 		- only need to calculate tangents for convex arcs curving outwards
 		- arcs curving inwards can be replaced by edge during calculation of bounding box
+		- http://mathoverflow.net/questions/93659/find-the-bounding-box-of-a-circle-segment
+			- bounding box for an arc (to help w/ overall bounding box calculation)
+		- tangent to point/arc subproblems
+			- http://mathworld.wolfram.com/Circle-CircleTangents.html
+			- 
