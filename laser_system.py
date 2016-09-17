@@ -38,7 +38,7 @@ class Profile(object):
 					self.edges.append(laser_geo.Arc(p1,p2,pc))
 				else:
 					self.edges.append(laser_geo.Arc(p2,p1,pc))
-		self.geoArr = laser_geo.GeoArr(self.edges)
+		self.geoArr = laser_geo.GeoArr(self.edges,self.vertices)
 class PlethoraSystem(object):
 	_cutter = None
 	_profile = None

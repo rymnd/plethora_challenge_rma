@@ -67,7 +67,8 @@ class Arc(Edge):
 		if self.whichSide(self.pc)==0:
 			self.ang = math.pi
 		else:
-			self.ang = 2.*math.asin(round((0.5*self.L) / self.radius, 5))	#shorter angle
+			#capping the asin domain here may be unsafe...
+			self.ang = 2.*math.asin(max(min(round((0.5*self.L) / self.radius, 5),1),-1))	#shorter angle
 			if (self.whichSide(self.pc)<0):	#center on left of given endpoints
 				self.ang = math.pi*2 - self.ang
 		self.L = self.ang * self.radius
@@ -180,11 +181,13 @@ class Arc(Edge):
 		return [e1,e2]
 		
 class GeoArr():	#just list of edge elements
+	points = None
 	edges = None
 	boundingBox = None	
 	
-	def __init__(self,edges):
+	def __init__(self,edges,points):
 		self.edges = edges
+		self.points = points
 		
 	#generate smallest area rectangle
 	def _genBoundingBox(self):
@@ -213,6 +216,12 @@ class GeoArr():	#just list of edge elements
 				
 			elif isinstance(ele,Edge):
 				tangentEdges.append(ele)
+		#I think I need the following to handle concave cases
+		for p1 in self.points:
+			for p2 in self.points:
+				if p1==p2:
+					continue
+				tangentEdges.append(Edge(p1,p2))
 		
 		#print repr(len(tangentEdges))+" total tangent edges"
 		#should only be edge types
