@@ -9,6 +9,10 @@ class Point(object):
 	def __init__(self,x,y):
 		self.x = round(x,6)	#had some precision issues during testing
 		self.y = round(y,6)
+	def __eq__(self,other):
+		if isinstance(other,self.__class__):
+			return self.x==other.x and self.y==other.y
+		return False
 	
 class Edge(object):
 	p1 = None
@@ -28,6 +32,10 @@ class Edge(object):
 		self.xmax = max(p1.x,p2.x)
 		self.ymin = min(p1.y,p2.y)
 		self.ymax = max(p1.y,p2.y)
+	def __eq__(self,other):
+		if isinstance(other,self.__class__):
+			return self.p1==other.p1 and self.p2==other.p2 and self.L==other.L
+		return False
 		
 	#determines if provided point is on right of edge (1:right,0:on,-1:left)
 	def whichSide(self,p):
@@ -158,8 +166,8 @@ class Arc(Edge):
 		dax_1g = cos_g*dax-sin_g*day
 		day_1g = sin_g*dax+cos_g*day
 		tp1 = Point(self.pc.x+dpx_1g,self.pc.y+dpy_1g)
-		ta1 = Point(a.x+dax_1g,a.y+day_1g)
-		e1 = Edge(tp1,ta2) if (self.onArc(tp1) and a.onArc(ta1)) else None
+		ta1 = Point(a.pc.x+dax_1g,a.pc.y+day_1g)
+		e1 = Edge(tp1,ta1) if (self.onArc(tp1) and a.onArc(ta1)) else None
 		
 		#bottom tangent
 		dpx_2g = cos_g*dpx-sin_g*(-dpy)
@@ -167,36 +175,77 @@ class Arc(Edge):
 		dax_2g = cos_g*dax-sin_g*(-day)
 		day_2g = sin_g*dax+cos_g*(-day)
 		tp2 = Point(self.pc.x+dpx_2g,self.pc.y+dpy_2g)
-		ta2 = Point(a.x+dax_2g,a.y+day_2g)
+		ta2 = Point(a.pc.x+dax_2g,a.pc.y+day_2g)
 		e2 = Edge(tp2,ta2) if (self.onArc(tp2) and a.onArc(ta2)) else None
 		return [e1,e2]
 		
 class GeoArr():	#just list of edge elements
 	edges = None
-	boundingBox = None	#width,height and center
+	boundingBox = None	
 	
 	def __init__(self,edges):
 		self.edges = edges
 		
 	#generate smallest area rectangle
 	def _genBoundingBox(self):
+		self.boundingBox = None
 		tangentEdges = []
 		#start with existing linear lines
-		# for edge in self.edges:
-			# if isinstance(edge,laser_geo.Edge):
-				# tangentEdges.append(edge)
-			# elif isinstance(edge,laser_geo.Arc):
-				# #generate tangent lines if arcs exist
+		for ele in self.edges:
+			if isinstance(ele,Arc):
+				tangentEdges.append(Edge(ele.p1,ele.p2))	#in case of interior curve
+				#generate tangent lines between arcs and target points
+				for ele2 in self.edges:
+					if ele==ele2:	#don't match to itself
+						continue
+					if isinstance(ele2,Arc):
+						tangentPair = ele.tangent2Arc(ele2)
+					else:
+						#should've remapped p1 and p2 in array instead of explicitly..
+						if ele.p1!=ele2.p1 and ele.p2!=ele2.p1:
+							tp = ele.tangent2Point(ele2.p1)
+							tangentEdges.append(tp[0]) if tp[0] is not None else None 
+							tangentEdges.append(tp[1]) if tp[1] is not None else None
+						if ele.p1!=ele2.p2 and ele.p2!=ele2.p2:
+							tp = ele.tangent2Point(ele2.p2)
+							tangentEdges.append(tp[0]) if tp[0] is not None else None 
+							tangentEdges.append(tp[1]) if tp[1] is not None else None
+				
+			elif isinstance(ele,Edge):
+				tangentEdges.append(ele)
 		
-				# #only keep tangent lines if all other points are on one side of the line
-		# for tedge in tangentEdges:
-		#for each line, calculate the aligned rectangle area
-		
-			#apply rotation to all edges for alignment
+		print repr(len(tangentEdges))+" total tangent edges"
+		#should only be edge types
+		for tedge in tangentEdges:
+			ang = math.acos((tedge.p2.x-tedge.p1.x)/tedge.L)	#for reference, not actually used
+			bx = (tedge.p2.x-tedge.p1.x)/tedge.L
+			by = (tedge.p2.y-tedge.p1.y)/tedge.L
+			tedgeV = tedge.alignV(bx,by)	#should be horizontal now
 			
-			#construct bounding box
+			xmin = min(tedgeV.p1.x,tedgeV.p2.x)
+			xmax = max(tedgeV.p1.x,tedgeV.p2.x)
+			ymin = tedgeV.p1.y
+			ymax = tedgeV.p1.y
 			
-		self.boundingBox = BoundingBox(Point(0,0),5.,5.)
+			isBounding = True
+			for ele in self.edges:
+				if ele==tedge:
+					continue
+				#apply reverse rotation to all edges for alignment
+				eleV = ele.alignV(bx,by)
+				xmin = min(eleV.xmin,xmin)
+				xmax = max(eleV.xmax,xmax)
+				ymin = min(eleV.ymin,ymin)
+				ymax = max(eleV.ymax,ymax)
+				
+				#check that it is indeed a bounding line - can just check y bounds after alignment - either ymin or ymax should be maintained 
+				if ymin<tedgeV.p1.y and ymax>tedgeV.p1.y:
+					isBounding = False
+					break
+			if isBounding:
+				tedgeBB = BoundingBox(xmin,xmax,ymin,ymax)
+				if self.boundingBox is None or tedgeBB.area<self.boundingBox.area:
+					self.boundingBox = tedgeBB
 	
 class BoundingBox():
 	w = 0
@@ -208,13 +257,13 @@ class BoundingBox():
 	ymin = 0
 	ymax = 0
 	
-	def __init__(self,pc,w,h):
-		self.pc = pc
-		self.w = w
-		self.h = h
-		self.area = w*h
-		self.xmin = self.pc.x-self.w/2.
-		self.xmax = self.pc.x-self.w/2.
-		self.ymin = self.pc.y-self.h/2.
-		self.ymax = self.pc.y-self.h/2.
+	def __init__(self,xmin,xmax,ymin,ymax):
+		self.pc = Point((xmax-xmin)/2+xmin,(ymax-ymin)/2+ymin)
+		self.w = xmax-xmin
+		self.h = ymax-ymin
+		self.area = self.w*self.h
+		self.xmin = xmin
+		self.xmax = xmax
+		self.ymin = ymin
+		self.ymax = ymax
 		
